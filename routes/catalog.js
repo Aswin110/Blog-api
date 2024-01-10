@@ -4,6 +4,8 @@ const postController = require('../controller/postController');
 const commentController = require('../controller/commentController');
 const authController = require('../controller/authController');
 
+router.get('/', postController.home_page);
+
 router.get('/posts', postController.post_list);
 
 router.get('/post/new', postController.create_post_get);

@@ -1,6 +1,10 @@
 asyncHandler = require('express-async-handler');
 const Post = require('../models/post');
 
+exports.home_page = asyncHandler(async(req, res, next)=> {
+	res.send('Home Page');
+});
+
 exports.post_list = asyncHandler(async(req, res, next)=> {
 	res.send('GET all posts');
 });
