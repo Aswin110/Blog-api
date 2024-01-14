@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const bcrypt = require('bcryptjs');
 
 const userSchema = new Schema({
 	username: {
@@ -13,10 +14,31 @@ const userSchema = new Schema({
 	password: { type:String, required:true, minLength:8 },
 });
 
-userSchema.static.isUsernameTaken = async function isUsernameTaken (username) {
+userSchema.statics.isUsernameTaken = async function isUsernameTaken (username) {
 	return this.exists({username})
 		.collation({ locale:'en', strength:2 })
 		.exec();
+};
+
+userSchema.virtual('url').get( function getUrl(){
+	return `/account/${this._id}`;
+});
+
+userSchema.pre('save', async function (next) {
+	const user = this;
+	if (!user.isModified('password')) {return next();}
+
+	bcrypt.hash(user.password, 10).then((hashedPassword)=> {
+		user.password = hashedPassword;
+		next();
+	}).catch((err)=> next(err));
+});
+
+userSchema.methods.isValidPassword = async function (password) {
+	const user = this;
+	const compare = await bcrypt.compare(password, user.password);
+  
+	return compare;
 };
 
 module.exports = mongoose.model('User', userSchema);

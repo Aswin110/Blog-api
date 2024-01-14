@@ -11,6 +11,7 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const User = require('./models/user');
+const cors = require('cors');
 
 var catalogRouter = require('./routes/catalog');
 var usersRouter = require('./routes/users');
@@ -34,6 +35,7 @@ app.set('view engine', 'pug');
 app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

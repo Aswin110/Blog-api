@@ -10,7 +10,7 @@ router.get('/posts', postController.post_list);
 
 router.get('/post/new', postController.create_post_get);
 
-router.post('/post/new', postController.create_post_post);
+router.post('/post/new', authController.verifyToken, postController.create_post_post);
 
 router.get('/post/:post', postController.post_details);
 
@@ -29,6 +29,8 @@ router.post('/login', authController.login_post);
 router.get('/signup', authController.signup_get);
 
 router.post('/signup', authController.signup_post);
+
+router.post('/signup/check-username', authController.Check_username);
 
 router.get('/logout', authController.logout_get);
 
