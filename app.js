@@ -70,16 +70,7 @@ passport.use(
 		},
 		async (username, password, done) => {
 			try {
-				const user = await User.create(
-					{
-						first_name: req.body.first_name,
-						last_name: req.body.last_name,
-						username, 
-						password
-					}
-				);
-  
-				return done(null, user);
+				return done(null, {});
 			} catch (error) {
 				done(error);
 			}

@@ -1,38 +1,43 @@
-asyncHandler = require('express-async-handler');
+const asyncHandler = require('express-async-handler');
 const Post = require('../models/post');
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const { body, validationResult } = require('express-validator');
 const bcrypt =require('bcryptjs');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 exports.login_get = asyncHandler(async(req, res, next)=> {
 	res.send('login page GET');
 });
 
-exports.login_post = asyncHandler(async(req, res, next)=> {
+exports.login_post = asyncHandler(async (req, res, next) => {
 	passport.authenticate('login', async (err, user, info) => {
 		try {
 			if (err || !user) {
+				console.error(err);
+				console.log(info);
 				const error = new Error('An error occurred.');
-	
 				return next(error);
 			}
-	
+  
 			req.login(user, { session: false }, async (error) => {
 				if (error) return next(error);
-	
+  
 				const body = { _id: user._id, username: user.username };
-				const token = jwt.sign({ user: body }, process.env.SECRET, {
+				const token = jwt.sign({ user: body }, 'secretkey', {
 					expiresIn: '1d',
 				});
-	
+  
 				return res.json({ token });
 			});
 		} catch (error) {
+			console.error(error);
 			return next(error);
 		}
-	});
+	})(req, res, next);
 });
 // FORMAT of token
 // Authorization: Bearer <access_token>
@@ -60,55 +65,50 @@ exports.signup_get = asyncHandler( async (req, res, next) => {
 	res.send('Signup page GET');
 });
 
-exports.signup_post =[
-	body('first_name')
-		.trim()
-		.isString()
-		.isLength({ min: 1 })
-		.withMessage('First name is required'),
+exports.signup_post = asyncHandler(async (req, res, next) => {
+	const { first_name, last_name, username, password, confirmPassword } = req.body;
 
-	body('last_name')
-		.trim()
-		.isString()
-		.isLength({ min: 1 })
-		.withMessage('Last name is required'),
+	// Check if passwords match
+	if (password !== confirmPassword) {
+		return res.json({ message: 'Passwords do not match' });
+	}
 
-	body('username')
-		.trim()
-		.isLength({ min: 1, max: 25 })
-		.withMessage('Username must be between 1 and 25 characters'),
+	try {
+		const existingUser = await User.findOne({ username });
 
-	body('password')
-		.isLength({ min: 1 })
-		.withMessage('Password is too short'),
+		if (existingUser) {
+			return res.json({ message: 'User already exists' });
+		}
+		const hashedPassword = await bcrypt.hash(password, 10);
+		const newUser = await User.create({
+			first_name,
+			last_name,
+			username,
+			password:hashedPassword,
+		});
 
-	body('confirmPassword')
-		.isLength({ min: 1 })
-		.withMessage('Passwords do not match'),
-		
-	asyncHandler(async(req, res, next)=>{
-		const errors = validationResult(req);
+		// Authenticate the new user
+		passport.authenticate('signup', { session: false }, (err, user) => {
+			if (err || !user) {
+				console.error(err);
+				const error = new Error('An error occurred.');
+				return next(error);
+			}
 
-		if (!errors.isEmpty()) {
-			console.log(errors.array());
-		} else {
-			const hashedPassword = await bcrypt.hash(req.body.password, 10);
-
-			const user = new User({
-				first_name: req.body.first_name,
-				last_name: req.body.last_name,
-				username: req.body.username,
-				password: hashedPassword,
+			const body = { _id: user._id, username: user.username };
+			const token = jwt.sign({ user: body }, process.env.SECRET, {
+				expiresIn: '1d',
 			});
 
-			await user.save();
-			next();
-		}
-	}),
+			return res.json({ token });
+		})(req, res, next);
 
-	passport.authenticate(
-		'signup', { session: false }),
-]; 
+	} catch (error) {
+		console.error(error);
+		return next(error);
+	}
+});
+
 
 exports.logout_get = asyncHandler(async(req, res, next)=> {
 	res.send('logout page GET');

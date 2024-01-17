@@ -9,8 +9,8 @@ const userSchema = new Schema({
 		maxLength:30,
 		unique:true,
 	},
-	first_name: { type:String, required: true },
-	last_name: { type: String, required:true },
+	first_name: { type:String },
+	last_name: { type: String },
 	password: { type:String, required:true, minLength:8 },
 });
 
