@@ -21,63 +21,30 @@ var usersRouter = require('./routes/users');
 
 dotenv.config();
 
-passport.use('login', 
-	new LocalStrategy(
-		{
-			usernameField: 'username', 
-			passwordField: 'password',
-		},
-		async (username, password, done) => {
-			try {
-				const user = await User.findOne({username});
-				if(!user) {
-					return done(null, false, {message:'User not found'});
-				}
-				const validate = await user.isValidPassword(password);
-				if(!validate) {
-					return done(null, false, {message:'Wrong password'});
-				}
-				return done(null, user, {message:'Logged in successfully'});
-			} catch(err) {
-				return done(err);
-			}
-		}
-	)
-);
-
 passport.use(
 	new JWTStrategy(
 		{
 			secretOrKey: process.env.SECRET,
 			jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
+			issuer: process.env.SERVER_URL,
+			audience: process.env.CLIENT_URL,
 		},
-		async (token, done) => {
-			try {
-				return done(null, token.user);
-			} catch (error) {
-				done(error);
-			}
+		async (jwt_payload, done) => {
+			console.log('jwt_payload', jwt_payload);
+			User.findOne({username: jwt_payload.username}, function(err, user) {
+				console.log('user',user);
+				if (err) {
+					return done(err, false);
+				}
+				if (user) {
+					return done(null, user);
+				} else {
+					return done(null, false);
+				}
+			});
 		}
 	)
 );
-  
-passport.use(
-	'signup',
-	new LocalStrategy(
-		{
-			usernameField: 'username',
-			passwordField: 'password',
-		},
-		async (username, password, done) => {
-			try {
-				return done(null, {});
-			} catch (error) {
-				done(error);
-			}
-		}
-	)
-);
-  
 
 mongoose.set('strictQuery', false);
 const mongoDB = process.env.MONGODB_URI;

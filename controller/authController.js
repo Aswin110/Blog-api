@@ -14,30 +14,35 @@ exports.login_get = asyncHandler(async(req, res, next)=> {
 });
 
 exports.login_post = asyncHandler(async (req, res, next) => {
-	passport.authenticate('login', async (err, user, info) => {
-		try {
-			if (err || !user) {
-				console.error(err);
-				console.log(info);
-				const error = new Error('An error occurred.');
-				return next(error);
-			}
-  
+	try {
+		const {username, password} = req.body;
+		const user = await User.findOne({username}).exec();
+		// console.log(user);
+		// res.send(user);
+
+		if(!user) {
+			return res.status(200).json({message:'invalid username and password'});
+		}
+
+		const isValidPassword = await user.isValidPassword(password);
+
+		if (!isValidPassword) {
+			return res.status(200).json({message:'invalid username and password'});
+		} else {
 			req.login(user, { session: false }, async (error) => {
-				if (error) return next(error);
-  
+				if (error) return next(error);	  
 				const body = { _id: user._id, username: user.username };
 				const token = jwt.sign({ user: body }, 'secretkey', {
 					expiresIn: '1d',
-				});
-  
+				});	  
 				return res.json({ token });
 			});
-		} catch (error) {
-			console.error(error);
-			return next(error);
-		}
-	})(req, res, next);
+			// res.send('logged in');
+		}  
+	} catch (error)	{
+		console.log(error);
+		next(error);
+	}
 });
 // FORMAT of token
 // Authorization: Bearer <access_token>
@@ -52,14 +57,6 @@ exports.verifyToken = (req, res, next)=> {
 		res.sendStatus(403);
 	}
 };
-
-exports.signup_success = asyncHandler(async (req, res, next) => {
-	const body = { _id: req.user._id, username: req.user.username };
-	const token = jwt.sign({ user: body }, process.env.SECRET, {
-		expiresIn: '1d',
-	});
-	res.json({ token });
-});
 
 exports.signup_get = asyncHandler( async (req, res, next) => {
 	res.send('Signup page GET');
@@ -86,29 +83,22 @@ exports.signup_post = asyncHandler(async (req, res, next) => {
 			username,
 			password:hashedPassword,
 		});
-
-		// Authenticate the new user
-		passport.authenticate('signup', { session: false }, (err, user) => {
-			if (err || !user) {
-				console.error(err);
-				const error = new Error('An error occurred.');
-				return next(error);
-			}
-
-			const body = { _id: user._id, username: user.username };
-			const token = jwt.sign({ user: body }, process.env.SECRET, {
-				expiresIn: '1d',
-			});
-
-			return res.json({ token });
-		})(req, res, next);
-
+		console.log(newUser);
+		const body = { 
+			_id: newUser._id,
+			username: newUser.username, 
+			first_name: newUser.first_name,
+			last_name: newUser.last_name
+		};
+		const token = jwt.sign({ user: body }, process.env.SECRET, {
+			expiresIn: '1d',
+		});
+		return res.json({ token });
 	} catch (error) {
 		console.error(error);
 		return next(error);
 	}
 });
-
 
 exports.logout_get = asyncHandler(async(req, res, next)=> {
 	res.send('logout page GET');
@@ -127,13 +117,21 @@ exports.Check_username = asyncHandler(async(req, res, next)=>{
 
 
 
-// exports.logout_in = asyncHandler(async(req, res, next)=> {
-// 	const user = {
-// 		id: 1,
-// 		username:'AswinAshok',
-// 		email:'brad@gmail.com',
-// 	};
-// 	jwt.sign({user},'secretkey',{expiresIn:'30s'},(err, token) => {
-// 		res.json({token});
-// 	});
-// });
+
+
+// passport.authenticate('jwt', async (err, user, info) => {
+	// 	try {
+	// 		if (err || !user) {
+				
+	// 			console.error('err',err);
+	// 			console.log(info);
+	// 			const error = new Error('An error occurred.');
+	// 			return next(error);
+	// 		}
+
+
+// } catch (error) {
+	// 	console.error(error);
+	// 	return next(error);
+	// }
+	// })(req, res, next);
