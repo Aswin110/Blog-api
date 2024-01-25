@@ -14,7 +14,6 @@ exports.post_list = asyncHandler(async(req, res, next)=> {
 		err.status = 400;
 		next(err);
 	}
-	// posts.map(post=>console.log('post', post))
 	const formattedPosts = posts.map(post => ({
 		_id: post._id,
 		title: post.title,
